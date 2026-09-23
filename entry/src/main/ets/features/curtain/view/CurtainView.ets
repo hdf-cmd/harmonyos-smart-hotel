@@ -28,8 +28,22 @@ export struct CurtainView {
   private screenAnimator?: AnimatorResult
 
   aboutToDisappear(): void {
-    this.curtainAnimator?.cancel()
-    this.screenAnimator?.cancel()
+    // 拆掉回调再取消：cancel 带"到终点"语义会迟到派发终点帧，避免写坏共享 VM 的位置
+    this.releaseAnimator(this.curtainAnimator)
+    this.releaseAnimator(this.screenAnimator)
+  }
+
+  /**
+   * 安全释放动画：先摘掉回调再 cancel——
+   * cancel 与 finish 同语义（会"到终点"并迟到派发终点帧），
+   * 若不清回调，旧动画结束后会把位置写回旧目标（实测踩坑：暂停后改点另一方向，帘布过一会弹回）
+   */
+  private releaseAnimator(animator?: AnimatorResult): void {
+    if (animator) {
+      animator.onFrame = (): void => {}
+      animator.onFinish = (): void => {}
+      animator.cancel()
+    }
   }
 
   /**
@@ -70,11 +84,11 @@ export struct CurtainView {
       return // 已在目标位（例如全开时再点打开），无需动画
     }
 
-    // 结束上一个动画：cancel 不触发 onFinish，避免旧目标把位置写回
+    // 结束上一个动画：先摘回调再 cancel（见 releaseAnimator 注释）
     if (isScreening) {
-      this.screenAnimator?.cancel()
+      this.releaseAnimator(this.screenAnimator)
     } else {
-      this.curtainAnimator?.cancel()
+      this.releaseAnimator(this.curtainAnimator)
     }
 
     const animator: AnimatorResult = this.getUIContext().createAnimator({
@@ -88,6 +102,10 @@ export struct CurtainView {
       end: 1
     })
     animator.onFrame = (progress: number): void => {
+      // 状态已被暂停/改向时本动画作废（防过期回调污染位置）
+      if ((isScreening ? this.viewModel.screenState : this.viewModel.curtainState) !== state) {
+        return
+      }
       const pos: number = from + (target - from) * progress
       if (isScreening) {
         this.viewModel.applyScreenPos(pos)
@@ -96,6 +114,9 @@ export struct CurtainView {
       }
     }
     animator.onFinish = (): void => {
+      if ((isScreening ? this.viewModel.screenState : this.viewModel.curtainState) !== state) {
+        return // 已被暂停/改向：落位作废，位置留在当前帧由下一次状态变化驱动
+      }
       if (isScreening) {
         this.viewModel.applyScreenPos(target)
       } else {
