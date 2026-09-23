@@ -25,6 +25,19 @@ export default function serviceViewModelTest() {
       vm.toggleCleanRoom()      // 还原
     })
 
+    // 隐含约定：SOS 是"通知动作"，不改动任何开关状态
+    it('should_call_sos_without_changing_switches', 0, () => {
+      const vm = ServiceViewModel.getInstance()
+      vm.doNotDisturb = false
+      vm.cleanRoom = true
+
+      vm.callSos('2002')
+
+      expect(vm.doNotDisturb).assertFalse()
+      expect(vm.cleanRoom).assertTrue()
+      vm.cleanRoom = false   // 还原
+    })
+
     // 隐含约定：两次 getInstance 必须是同一个实例
     it('should_be_singleton', 0, () => {
       expect(ServiceViewModel.getInstance() === ServiceViewModel.getInstance()).assertTrue()

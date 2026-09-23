@@ -119,5 +119,34 @@ export default function loginViewModelTest() {
       expect(vm.userName).assertEqual('guest')
       expect(vm.rememberMe).assertFalse()
     })
+
+    // 退出登录：内存态复位（表单清空、取消勾选）
+    it('should_logout_reset_memory_state', 0, async () => {
+      const vm = new LoginViewModel(new FakeRememberMeStore())
+      vm.roomNo = '2002'
+      vm.userName = 'xiao'
+      vm.rememberMe = true
+
+      await vm.logout({} as common.Context)
+
+      expect(vm.roomNo).assertEqual('')
+      expect(vm.userName).assertEqual('')
+      expect(vm.rememberMe).assertFalse()
+    })
+
+    // 退出登录：持久化也被清空（存空值 + 未勾选，下一位客人看不到残留）
+    it('should_logout_clear_persisted_store', 0, async () => {
+      const fake = new FakeRememberMeStore()
+      const vm = new LoginViewModel(fake)
+      vm.roomNo = '2002'
+      vm.userName = 'xiao'
+      vm.rememberMe = true
+
+      await vm.logout({} as common.Context)
+
+      expect(fake.savedInfo?.roomNo).assertEqual('')
+      expect(fake.savedInfo?.userName).assertEqual('')
+      expect(fake.savedInfo?.rememberMe).assertFalse()
+    })
   })
 }
