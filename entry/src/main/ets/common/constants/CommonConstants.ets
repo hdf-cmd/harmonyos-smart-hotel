@@ -52,4 +52,10 @@ export class CommonConstants {
   static readonly COLOR_TAB_SELECTED_BG: string = '#C9A46D'      // TabBar 选中胶囊金色
   static readonly TAB_BAR_HEIGHT: number = 60                    // 底部悬浮栏高度
   static readonly PAGE_SIDE_PADDING: number = 16                 // 页面左右边距
+
+  // —— 灯光页（第 4 步）——
+  static readonly TOGGLE_WIDTH: number = 38                      // 独立控制开关宽
+  static readonly TOGGLE_HEIGHT: number = 21                     // 独立控制开关高
+  static readonly MAIN_SWITCH_SIZE: number = 88                  // 总开关尺寸
+  static readonly LIGHT_ROW_HEIGHT: number = 40                  // 独立控制行高
 }

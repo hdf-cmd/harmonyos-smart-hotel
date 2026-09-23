@@ -3,6 +3,7 @@
 // 【三级导航 · 第二级】每个 Tab 对应的 View 自己持 Navigation + 子栈 + 域内路由，
 // 所以这一层保持"傻"——只干装配，不加逻辑。
 import { CommonConstants } from '../common/constants/CommonConstants'
+import { MainTabModel } from '../common/model/MainTabModel'
 import { HomeView } from '../features/home/view/HomeView'
 import { LightView } from '../features/light/view/LightView'
 import { CurtainView } from '../features/curtain/view/CurtainView'
@@ -25,11 +26,17 @@ const ICON_BELL: string =
 
 @ComponentV2
 export struct MainPage {
-  // 当前选中的 Tab 下标
-  @Local currentIndex: number = 0
+  // Tab 下标状态源（跨页共享单例：灯光/窗帘/服务页的"返回"要切回首页）
+  @Local tabModel: MainTabModel = MainTabModel.getInstance()
 
   // Tab 内容容器控制器（自绘悬浮栏通过它切换页签）
   private tabsController: TabsController = new TabsController()
+
+  // 任何地方改了 tabModel.index（含子页面"返回"），统一在这里驱动 Tabs 切换
+  @Monitor('tabModel.index')
+  onTabIndexChange(): void {
+    this.tabsController.changeIndex(this.tabModel.index)
+  }
 
   @Builder
   tabItem(label: string, index: number, iconCommands: string) {
@@ -40,21 +47,20 @@ export struct MainPage {
         .height(24)
         .fill(Color.White)
         .strokeWidth(0)
-        .opacity(this.currentIndex === index ? 1.0 : 0.72)
+        .opacity(this.tabModel.index === index ? 1.0 : 0.72)
         .antiAlias(true)
 
       Text(label)
         .fontSize(10)
-        .fontColor(this.currentIndex === index ? Color.White : CommonConstants.COLOR_TAB_INACTIVE)
+        .fontColor(this.tabModel.index === index ? Color.White : CommonConstants.COLOR_TAB_INACTIVE)
     }
     .padding({ left: 16, right: 16, top: 8, bottom: 8 })
     .borderRadius(24)
-    .backgroundColor(this.currentIndex === index
+    .backgroundColor(this.tabModel.index === index
       ? CommonConstants.COLOR_TAB_SELECTED_BG
       : Color.Transparent)
     .onClick(() => {
-      this.currentIndex = index
-      this.tabsController.changeIndex(index)
+      this.tabModel.index = index
     })
   }
 
@@ -63,7 +69,7 @@ export struct MainPage {
     NavDestination() {
       Stack({ alignContent: Alignment.Bottom }) {
         // 系统 TabBar 高度置 0（隐藏），页签切换只由下方自绘悬浮栏驱动
-        Tabs({ barPosition: BarPosition.End, index: this.currentIndex, controller: this.tabsController }) {
+        Tabs({ barPosition: BarPosition.End, index: this.tabModel.index, controller: this.tabsController }) {
           TabContent() {
             HomeView()
           }
@@ -84,7 +90,7 @@ export struct MainPage {
         .scrollable(false)
         .animationDuration(0)
         .onChange((index: number) => {
-          this.currentIndex = index
+          this.tabModel.index = index
         })
         .width('100%')
         .height('100%')
