@@ -68,6 +68,14 @@ export struct MainPage {
     // NavDestination：本页作为"栈里的一个页面"的根节点（Navigation 体系的要求）
     NavDestination() {
       Stack({ alignContent: Alignment.Bottom }) {
+        // 全屏沉浸背景：提到 Tabs 之外（TabContent 会裁掉子组件的安全区扩展），
+        // 让背景铺进状态栏/导航条区域，四个 Tab 页共用这一层
+        Image($r('app.media.page_background'))
+          .width('100%')
+          .height('100%')
+          .objectFit(ImageFit.Cover)
+          .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+
         // 系统 TabBar 高度置 0（隐藏），页签切换只由下方自绘悬浮栏驱动
         Tabs({ barPosition: BarPosition.End, index: this.tabModel.index, controller: this.tabsController }) {
           TabContent() {
