@@ -134,7 +134,7 @@ export struct LightView {
               .fontColor(CommonConstants.COLOR_TEXT_ON_IMG_SOFT)
           }
           .width('100%')
-          .margin({ top: 14 })
+          .margin({ top: 12 })
 
           // 场景模式（5 项：明亮/柔和/阅读/温馨/睡眠）
           Stack() {
@@ -172,7 +172,7 @@ export struct LightView {
           }
           .width('100%')
           .height(188)
-          .margin({ top: 16 })
+          .margin({ top: 12 })
 
           // 独立控制（9 路：两列 5+4）
           Stack() {
@@ -269,8 +269,8 @@ export struct LightView {
             .padding({ left: 16, right: 16, top: 12, bottom: 12 })
           }
           .width('100%')
-          .height(288)
-          .margin({ top: 16 })
+          .height(268)
+          .margin({ top: 12 })
         }
         .width('100%')
         .height('100%')
