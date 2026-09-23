@@ -63,4 +63,9 @@ export class CommonConstants {
   static readonly CURTAIN_BTN_SIZE: number = 46                  // 三态按钮圆底尺寸
   static readonly CURTAIN_VISUAL_HEIGHT: number = 150            // 帘布可视区高度
   static readonly CURTAIN_CARD_HEIGHT: number = 268              // 布帘/窗纱卡高度
+
+  // —— 服务页（第 6 步）——
+  static readonly SERVICE_TOGGLE_WIDTH: number = 46              // 服务开关轨道宽
+  static readonly SERVICE_TOGGLE_HEIGHT: number = 24             // 服务开关轨道高
+  static readonly SERVICE_TOGGLE_KNOB: number = 20               // 服务开关圆钮尺寸
 }

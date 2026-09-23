@@ -98,4 +98,22 @@ export class LoginViewModel extends BaseViewModel {
       this.logger.error(`保存记住信息失败：${e}`)
     }
   }
+
+  /**
+   * 退出登录：内存态先复位（界面立即生效），再清掉"记住我"的持久化，
+   * 避免下一位客人打开 App 还看到上一位的信息
+   */
+  async logout(context: common.Context): Promise<void> {
+    this.roomNo = ''
+    this.userName = ''
+    this.rememberMe = false
+    try {
+      const empty = new LoginInfo()
+      empty.rememberMe = false
+      await this.store.save(context, empty)
+      this.logger.info('已退出登录，记住信息已清除')
+    } catch (e) {
+      this.logger.error(`退出登录清理失败：${e}`)
+    }
+  }
 }

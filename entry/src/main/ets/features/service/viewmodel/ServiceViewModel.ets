@@ -40,4 +40,11 @@ export class ServiceViewModel extends BaseViewModel {
     this.logger.info(`清理房间：${this.cleanRoom}`)
     return this.cleanRoom
   }
+
+  /**
+   * SOS 紧急呼叫（本步为日志留痕；接真实服务时在这里发请求）
+   */
+  callSos(roomNo: string): void {
+    this.logger.info(`SOS 紧急呼叫：房号 ${roomNo}`)
+  }
 }
