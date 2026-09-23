@@ -1,7 +1,8 @@
 // 窗帘 ViewModel：布帘 / 窗纱三态（打开/暂停/关闭）+ 全局开关联动
 //
-// 【视觉位置为什么要单独一个字段】"暂停"表示停在当前位置——
-// 所以三态 state 只管按钮高亮，视觉位置 closed 只在按开/关时改变。
+// 【为什么"位置"是 0~1 的进度而不是布尔】"暂停"要能停在半途——
+// state 管按钮高亮与目标方向；pos（0=全开 → 1=全关）由 View 的 Animator 逐帧写回，
+// 暂停时动画停住、pos 就保留在半途；再点打开/关闭按剩余距离续跑。
 import { BaseViewModel } from '../../../common/base/BaseViewModel'
 import { Logger } from '../../../common/log/Logger'
 
@@ -23,10 +24,10 @@ export class CurtainViewModel extends BaseViewModel {
 
   // 布帘
   @Trace curtainState: string = CurtainViewModel.STATE_OPEN
-  @Trace curtainClosed: boolean = false      // 布帘视觉位置（false=展开）
+  @Trace curtainPos: number = 0              // 视觉位置：0=全开 → 1=全关（暂停可停中间值）
   // 窗纱
   @Trace screenState: string = CurtainViewModel.STATE_OPEN
-  @Trace screenClosed: boolean = false       // 窗纱视觉位置
+  @Trace screenPos: number = 0
 
   constructor() {
     super()
@@ -34,16 +35,11 @@ export class CurtainViewModel extends BaseViewModel {
   }
 
   /**
-   * 设置布帘三态（打开/关闭同时更新视觉位置，暂停保持原位）
+   * 设置布帘三态：只改状态标签；视觉位置由 View 的开合动画驱动（暂停=停住动画、位置保留半途）
    */
   setCurtain(state: string): void {
     this.curtainState = state
-    if (state === CurtainViewModel.STATE_OPEN) {
-      this.curtainClosed = false
-    } else if (state === CurtainViewModel.STATE_CLOSE) {
-      this.curtainClosed = true
-    }
-    this.logger.info(`布帘：${state}`)
+    this.logger.info(`布帘：${state}（当前位置 ${this.curtainPos.toFixed(2)}）`)
   }
 
   /**
@@ -51,12 +47,21 @@ export class CurtainViewModel extends BaseViewModel {
    */
   setScreening(state: string): void {
     this.screenState = state
-    if (state === CurtainViewModel.STATE_OPEN) {
-      this.screenClosed = false
-    } else if (state === CurtainViewModel.STATE_CLOSE) {
-      this.screenClosed = true
-    }
-    this.logger.info(`窗纱：${state}`)
+    this.logger.info(`窗纱：${state}（当前位置 ${this.screenPos.toFixed(2)}）`)
+  }
+
+  /**
+   * 动画逐帧写入口：布帘位置（夹取到 0~1，防止动画越界）
+   */
+  applyCurtainPos(pos: number): void {
+    this.curtainPos = Math.max(0, Math.min(1, pos))
+  }
+
+  /**
+   * 动画逐帧写入口：窗纱位置
+   */
+  applyScreenPos(pos: number): void {
+    this.screenPos = Math.max(0, Math.min(1, pos))
   }
 
   /**
