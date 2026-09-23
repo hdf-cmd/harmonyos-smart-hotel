@@ -11,6 +11,7 @@ import homeViewModelTest from './HomeViewModel.test'
 import lightViewModelTest from './LightViewModel.test'
 import serviceViewModelTest from './ServiceViewModel.test'
 import mainTabModelTest from './MainTabModel.test'
+import curtainViewModelTest from './CurtainViewModel.test'
 
 // 测试入口：函数名固定为 testsuite，由框架约定调用
 export default function testsuite() {
@@ -20,4 +21,5 @@ export default function testsuite() {
   lightViewModelTest()
   serviceViewModelTest()
   mainTabModelTest()
+  curtainViewModelTest()
 }
