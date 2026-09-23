@@ -58,4 +58,9 @@ export class CommonConstants {
   static readonly TOGGLE_HEIGHT: number = 21                     // 独立控制开关高
   static readonly MAIN_SWITCH_SIZE: number = 88                  // 总开关尺寸
   static readonly LIGHT_ROW_HEIGHT: number = 40                  // 独立控制行高
+
+  // —— 窗帘页（第 5 步）——
+  static readonly CURTAIN_BTN_SIZE: number = 46                  // 三态按钮圆底尺寸
+  static readonly CURTAIN_VISUAL_HEIGHT: number = 150            // 帘布可视区高度
+  static readonly CURTAIN_CARD_HEIGHT: number = 268              // 布帘/窗纱卡高度
 }
