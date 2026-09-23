@@ -117,7 +117,7 @@ export struct HomeView {
             .fontWeight(FontWeight.Medium)
             .fontColor(CommonConstants.COLOR_TEXT_ON_GOLD)
 
-          Text('一健关闭所有灯光')
+          Text('一键关闭所有灯光')
             .fontSize(11)
             .fontColor(CommonConstants.COLOR_TEXT_ON_GOLD_SUB)
         }
