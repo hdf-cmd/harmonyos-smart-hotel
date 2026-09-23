@@ -61,8 +61,9 @@ export class CommonConstants {
 
   // —— 窗帘页（第 5 步）——
   static readonly CURTAIN_BTN_SIZE: number = 46                  // 三态按钮圆底尺寸
-  static readonly CURTAIN_VISUAL_HEIGHT: number = 150            // 帘布可视区高度
-  static readonly CURTAIN_CARD_HEIGHT: number = 268              // 布帘/窗纱卡高度
+  static readonly CURTAIN_VISUAL_HEIGHT: number = 134            // 帘布可视区高度（压至一屏放下、与底部 TabBar 留净空）
+  static readonly CURTAIN_CARD_HEIGHT: number = 252              // 布帘/窗纱卡高度（= 可视区 + 118 固定部分）
+  static readonly CURTAIN_ANIM_DURATION: number = 2500           // 开合动画基准时长（按剩余距离等比缩放，支持停住/续跑）
 
   // —— 服务页（第 6 步）——
   static readonly SERVICE_TOGGLE_WIDTH: number = 46              // 服务开关轨道宽

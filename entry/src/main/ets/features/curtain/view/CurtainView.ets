@@ -2,7 +2,10 @@
 //
 // 【三级导航 · 第三级】Tab 根页面自持子栈并注册域内路由。本域暂无子页，子栈先立空架子。
 // 视觉逻辑：展开态用"垂帘"部件；关闭态用"直布板"部件各占半幅——
-// 两块布沿外边缘向中间生长/回收 + 垂帘淡出淡入，用 animateTo 补出开合动画。
+// 打开 = 两块布板各自向两侧平移滑出（中缝向两边张开）；关闭 = 从两侧滑回中间合拢。
+// 动画：VM 存位置进度 pos（0=全开 → 1=全关），View 用 Animator 逐帧写回——
+// 暂停可真停住半途，再点打开/关闭按剩余距离续跑；平移出画 + 外层裁切，布面不压缩。
+import { AnimatorResult } from '@kit.ArkUI'
 import { CommonConstants } from '../../../common/constants/CommonConstants'
 import { MainTabModel } from '../../../common/model/MainTabModel'
 import { CurtainViewModel } from '../viewmodel/CurtainViewModel'
@@ -19,6 +22,93 @@ export struct CurtainView {
 
   @Local viewModel: CurtainViewModel = CurtainViewModel.getInstance()
   @Local tabModel: MainTabModel = MainTabModel.getInstance()
+
+  // 开合动画执行器：布帘 / 窗纱各一个（可暂停停住、可按剩余距离续跑）
+  private curtainAnimator?: AnimatorResult
+  private screenAnimator?: AnimatorResult
+
+  aboutToDisappear(): void {
+    this.curtainAnimator?.cancel()
+    this.screenAnimator?.cancel()
+  }
+
+  /**
+   * 布帘状态变化 → 驱动开合动画（暂停=停住当前帧；打开/关闭=滑向目标）
+   */
+  @Monitor('viewModel.curtainState')
+  onCurtainStateChange(): void {
+    this.driveAnim(false, this.viewModel.curtainState)
+  }
+
+  /**
+   * 窗纱状态变化 → 驱动开合动画
+   */
+  @Monitor('viewModel.screenState')
+  onScreenStateChange(): void {
+    this.driveAnim(true, this.viewModel.screenState)
+  }
+
+  /**
+   * 驱动开合动画：暂停停在当前帧；打开/关闭从当前位置滑到目标
+   * （时长按剩余距离等比缩放——剩得少就用得短，续跑不突兀）
+   */
+  private driveAnim(isScreening: boolean, state: string): void {
+    const from: number = isScreening ? this.viewModel.screenPos : this.viewModel.curtainPos
+
+    if (state === CurtainViewModel.STATE_PAUSE) {
+      if (isScreening) {
+        this.screenAnimator?.pause()
+      } else {
+        this.curtainAnimator?.pause()
+      }
+      return
+    }
+
+    const target: number = state === CurtainViewModel.STATE_CLOSE ? 1 : 0
+    const distance: number = Math.abs(target - from)
+    if (distance < 0.001) {
+      return // 已在目标位（例如全开时再点打开），无需动画
+    }
+
+    // 结束上一个动画：cancel 不触发 onFinish，避免旧目标把位置写回
+    if (isScreening) {
+      this.screenAnimator?.cancel()
+    } else {
+      this.curtainAnimator?.cancel()
+    }
+
+    const animator: AnimatorResult = this.getUIContext().createAnimator({
+      duration: Math.round(CommonConstants.CURTAIN_ANIM_DURATION * distance),
+      easing: 'ease-in-out',
+      delay: 0,
+      fill: 'forwards',
+      direction: 'normal',
+      iterations: 1,
+      begin: 0,
+      end: 1
+    })
+    animator.onFrame = (progress: number): void => {
+      const pos: number = from + (target - from) * progress
+      if (isScreening) {
+        this.viewModel.applyScreenPos(pos)
+      } else {
+        this.viewModel.applyCurtainPos(pos)
+      }
+    }
+    animator.onFinish = (): void => {
+      if (isScreening) {
+        this.viewModel.applyScreenPos(target)
+      } else {
+        this.viewModel.applyCurtainPos(target)
+      }
+    }
+    if (isScreening) {
+      this.screenAnimator = animator
+    } else {
+      this.curtainAnimator = animator
+    }
+    animator.play()
+  }
 
   private showToast(message: string): void {
     this.getUIContext().getPromptAction().showToast({ message: message, duration: 1500 })
@@ -58,14 +148,12 @@ export struct CurtainView {
     }
     .layoutWeight(1)
     .onClick(() => {
-      // 用 animateTo 包住状态变更，让帘布的宽度/透明度变化播成开合动画（已用慢动作构建实测验证）
-      this.getUIContext().animateTo({ duration: 500, curve: Curve.EaseInOut }, () => {
-        if (isScreening) {
-          this.viewModel.setScreening(state)
-        } else {
-          this.viewModel.setCurtain(state)
-        }
-      })
+      // 只改状态：开合动画由状态监听统一驱动（暂停可真停住，开/关按剩余距离续跑）
+      if (isScreening) {
+        this.viewModel.setScreening(state)
+      } else {
+        this.viewModel.setCurtain(state)
+      }
       this.showToast(`${label}${isScreening ? '窗纱' : '布帘'}`)
     })
   }
@@ -99,13 +187,11 @@ export struct CurtainView {
     .layoutWeight(1)
     .height(46)
     .onClick(() => {
-      this.getUIContext().animateTo({ duration: 600, curve: Curve.EaseInOut }, () => {
-        if (isOpenAction) {
-          this.viewModel.openAll()
-        } else {
-          this.viewModel.closeAll()
-        }
-      })
+      if (isOpenAction) {
+        this.viewModel.openAll()
+      } else {
+        this.viewModel.closeAll()
+      }
       this.showToast(isOpenAction ? '已全部打开' : '已全部关闭')
     })
   }
@@ -157,8 +243,8 @@ export struct CurtainView {
             .padding({ left: 14, right: 14 })
           }
           .width('100%')
-          .height(72)
-          .margin({ top: 8 })
+          .height(68)
+          .margin({ top: 6 })
 
           // 布帘卡
           Stack() {
@@ -180,39 +266,43 @@ export struct CurtainView {
                   .height(10)
                   .objectFit(ImageFit.Fill)
 
-                // 展开态：两侧垂帘（打开时可见）
+                // 展开态：两侧垂帘（打开时可见）。左右素材为同尺寸镜像对，
+                // 各占半幅强制等宽 + Cover 撑满，保证打开后左右严格对称、帘布贴杆垂下
                 Row() {
                   Image($r('app.media.curtain_icon_left_part'))
+                    .width('50%')
                     .height('100%')
-                    .objectFit(ImageFit.Contain)
-
-                  Blank()
+                    .objectFit(ImageFit.Cover)
 
                   Image($r('app.media.curtain_icon_right_part'))
+                    .width('50%')
                     .height('100%')
-                    .objectFit(ImageFit.Contain)
+                    .objectFit(ImageFit.Cover)
                 }
                 .width('100%')
                 .height('100%')
                 .margin({ top: 8 })
-                .opacity(this.viewModel.curtainClosed ? 0.0 : 1.0)
+                .opacity(1.0 - this.viewModel.curtainPos)
 
-                // 关闭态：两块直布板沿外边缘向中间生长（关闭时可见）
+                // 关闭态：两块直布板——打开时各自向两侧平移滑出（中缝向两边张开），
+                // 关闭时从两侧滑回中间合拢；位置由进度 pos 驱动，可停在半途（暂停）
                 Row() {
                   Image($r('app.media.curtain_icon_left_closed'))
                     .height('100%')
-                    .width(this.viewModel.curtainClosed ? '50%' : '10%')
+                    .width('50%')
                     .objectFit(ImageFit.Fill)
+                    .translate({ x: `${(-100 * (1 - this.viewModel.curtainPos)).toFixed(2)}%` })
 
                   Image($r('app.media.curtain_icon_right_closed'))
                     .height('100%')
-                    .width(this.viewModel.curtainClosed ? '50%' : '10%')
+                    .width('50%')
                     .objectFit(ImageFit.Fill)
+                    .translate({ x: `${(100 * (1 - this.viewModel.curtainPos)).toFixed(2)}%` })
                 }
                 .width('100%')
                 .height('100%')
                 .margin({ top: 8 })
-                .opacity(this.viewModel.curtainClosed ? 1.0 : 0.0)
+                .opacity(this.viewModel.curtainPos)
               }
               .width('56%')
               .height(CommonConstants.CURTAIN_VISUAL_HEIGHT)
@@ -233,7 +323,7 @@ export struct CurtainView {
           }
           .width('100%')
           .height(CommonConstants.CURTAIN_CARD_HEIGHT)
-          .margin({ top: 10 })
+          .margin({ top: 8 })
 
           // 窗纱卡（结构同布帘，素材换成窗纱部件）
           Stack() {
@@ -254,37 +344,41 @@ export struct CurtainView {
                   .height(10)
                   .objectFit(ImageFit.Fill)
 
+                // 展开态：两侧垂帘（同布帘卡：等宽半幅 + Cover，左右对称）
                 Row() {
                   Image($r('app.media.curtain_icon_window_screening_left_part'))
+                    .width('50%')
                     .height('100%')
-                    .objectFit(ImageFit.Contain)
-
-                  Blank()
+                    .objectFit(ImageFit.Cover)
 
                   Image($r('app.media.curtain_icon_window_screening_right_part'))
+                    .width('50%')
                     .height('100%')
-                    .objectFit(ImageFit.Contain)
+                    .objectFit(ImageFit.Cover)
                 }
                 .width('100%')
                 .height('100%')
                 .margin({ top: 8 })
-                .opacity(this.viewModel.screenClosed ? 0.0 : 1.0)
+                .opacity(1.0 - this.viewModel.screenPos)
 
+                // 关闭态：两块窗纱板——打开时各自向两侧平移滑出，关闭时从两侧滑回中间合拢
                 Row() {
                   Image($r('app.media.curtain_icon_window_screening_left_part_closed'))
                     .height('100%')
-                    .width(this.viewModel.screenClosed ? '50%' : '10%')
+                    .width('50%')
                     .objectFit(ImageFit.Fill)
+                    .translate({ x: `${(-100 * (1 - this.viewModel.screenPos)).toFixed(2)}%` })
 
                   Image($r('app.media.curtain_icon_window_screening_right_part_closed'))
                     .height('100%')
-                    .width(this.viewModel.screenClosed ? '50%' : '10%')
+                    .width('50%')
                     .objectFit(ImageFit.Fill)
+                    .translate({ x: `${(100 * (1 - this.viewModel.screenPos)).toFixed(2)}%` })
                 }
                 .width('100%')
                 .height('100%')
                 .margin({ top: 8 })
-                .opacity(this.viewModel.screenClosed ? 1.0 : 0.0)
+                .opacity(this.viewModel.screenPos)
               }
               .width('56%')
               .height(CommonConstants.CURTAIN_VISUAL_HEIGHT)
@@ -304,7 +398,7 @@ export struct CurtainView {
           }
           .width('100%')
           .height(CommonConstants.CURTAIN_CARD_HEIGHT)
-          .margin({ top: 10 })
+          .margin({ top: 8 })
         }
         .width('100%')
         .height('100%')
