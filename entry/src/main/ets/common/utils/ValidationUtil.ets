@@ -35,6 +35,19 @@ export class ValidationUtil {
   }
 
   /**
+   * 房号：非空，且为 1-6 位纯数字
+   */
+  static validateRoomNo(roomNo: string): ValidationResult {
+    if (!roomNo || roomNo.trim() === '') {
+      return new ValidationResult(false, '房号不能为空')
+    }
+    if (!/^\d{1,6}$/.test(roomNo.trim())) {
+      return new ValidationResult(false, '房号需为 1-6 位数字')
+    }
+    return new ValidationResult(true)
+  }
+
+  /**
    * 密码：6-16 个字符
    */
   static validatePassword(password: string): ValidationResult {

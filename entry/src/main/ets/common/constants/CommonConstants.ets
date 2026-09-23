@@ -30,4 +30,15 @@ export class CommonConstants {
   static readonly SPACE_M: number = 16
   static readonly SPACE_L: number = 24
   static readonly RADIUS_CARD: number = 12
+
+  // —— 智慧酒店金色主题（登录页/各控制页通用）——
+  static readonly COLOR_GOLD_START: string = '#DDB77B'           // 金色渐变亮端（按钮）
+  static readonly COLOR_GOLD_END: string = '#C49E6D'             // 金色渐变暗端（按钮）
+  static readonly COLOR_TEXT_ON_IMAGE: string = '#FFFFFF'        // 图片背景上的主文字
+  static readonly COLOR_TEXT_ON_IMAGE_SUB: string = '#CCFFFFFF'  // 图片背景上的次要文字（80% 白）
+  static readonly COLOR_TEXT_ON_IMAGE_HINT: string = '#99FFFFFF' // 图片背景上的弱化文字（60% 白）
+  static readonly COLOR_INPUT_BG: string = '#33FFFFFF'           // 输入框半透明白底（20% 白）
+  static readonly INPUT_HEIGHT: number = 56                      // 输入框高度
+  static readonly INPUT_RADIUS: number = 28                      // 输入框圆角
+  static readonly LOGIN_BTN_HEIGHT: number = 56                  // 登录按钮高度
 }
