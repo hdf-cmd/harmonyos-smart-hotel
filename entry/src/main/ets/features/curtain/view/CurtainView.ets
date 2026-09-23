@@ -1,12 +1,14 @@
 // 窗帘 Tab 的根页面：全局开关（全部打开/全部关闭）+ 布帘 / 窗纱三态控制（含开合动画）
 //
 // 【三级导航 · 第三级】Tab 根页面自持子栈并注册域内路由。本域暂无子页，子栈先立空架子。
-// 视觉逻辑：展开态用"垂帘"部件；关闭态用"直布板"部件各占半幅——
-// 打开 = 两块布板各自向两侧平移滑出（中缝向两边张开）；关闭 = 从两侧滑回中间合拢。
+// 视觉逻辑：展开态用"垂帘"部件；关闭态用"直布板"部件各占半幅，布板叠在垂帘上层——
+// 打开 = 两块布板各自向两侧平移滑出（中缝向两边张开、逐渐露出垂帘）；
+// 关闭 = 从两侧滑回中间合拢（不透明布板直接盖住垂帘），全程单层观感、无叠影。
 // 动画：VM 存位置进度 pos（0=全开 → 1=全关），View 用 Animator 逐帧写回——
 // 暂停可真停住半途，再点打开/关闭按剩余距离续跑；平移出画 + 外层裁切，布面不压缩。
 import { AnimatorResult } from '@kit.ArkUI'
 import { CommonConstants } from '../../../common/constants/CommonConstants'
+import { Logger } from '../../../common/log/Logger'
 import { MainTabModel } from '../../../common/model/MainTabModel'
 import { CurtainViewModel } from '../viewmodel/CurtainViewModel'
 
@@ -26,6 +28,7 @@ export struct CurtainView {
   // 开合动画执行器：布帘 / 窗纱各一个（可暂停停住、可按剩余距离续跑）
   private curtainAnimator?: AnimatorResult
   private screenAnimator?: AnimatorResult
+  private logger: Logger = new Logger('[CurtainView]')
 
   aboutToDisappear(): void {
     // 拆掉回调再取消：cancel 带"到终点"语义会迟到派发终点帧，避免写坏共享 VM 的位置
@@ -68,6 +71,7 @@ export struct CurtainView {
    */
   private driveAnim(isScreening: boolean, state: string): void {
     const from: number = isScreening ? this.viewModel.screenPos : this.viewModel.curtainPos
+    this.logger.info(`driveAnim: ${isScreening ? 'screen' : 'curtain'} → ${state}，from=${from.toFixed(2)}`)
 
     if (state === CurtainViewModel.STATE_PAUSE) {
       if (isScreening) {
@@ -114,8 +118,11 @@ export struct CurtainView {
       }
     }
     animator.onFinish = (): void => {
-      if ((isScreening ? this.viewModel.screenState : this.viewModel.curtainState) !== state) {
-        return // 已被暂停/改向：落位作废，位置留在当前帧由下一次状态变化驱动
+      const blocked: boolean =
+        (isScreening ? this.viewModel.screenState : this.viewModel.curtainState) !== state
+      this.logger.info(`onFinish: target=${target.toFixed(2)} ${blocked ? '被拦截（状态已改）' : '落位'}`)
+      if (blocked) {
+        return
       }
       if (isScreening) {
         this.viewModel.applyScreenPos(target)
@@ -303,7 +310,9 @@ export struct CurtainView {
                 .width('100%')
                 .height('100%')
                 .margin({ top: 8 })
-                .opacity(1.0 - this.viewModel.curtainPos)
+                // 垂帘只在"全开静止态"显示：pos<0.1 内淡出（约 0.25s），
+                // 开合动画全程画面里只有一副帘板在背景前运动，不与垂帘叠影
+                .opacity(this.viewModel.curtainPos < 0.1 ? 1 - this.viewModel.curtainPos * 10 : 0)
 
                 // 关闭态：两块直布板——打开时各自向两侧平移滑出（中缝向两边张开），
                 // 关闭时从两侧滑回中间合拢；位置由进度 pos 驱动，可停在半途（暂停）
@@ -323,7 +332,6 @@ export struct CurtainView {
                 .width('100%')
                 .height('100%')
                 .margin({ top: 8 })
-                .opacity(this.viewModel.curtainPos)
               }
               .width('56%')
               .height(CommonConstants.CURTAIN_VISUAL_HEIGHT)
@@ -380,7 +388,8 @@ export struct CurtainView {
                 .width('100%')
                 .height('100%')
                 .margin({ top: 8 })
-                .opacity(1.0 - this.viewModel.screenPos)
+                // 垂帘只在"全开静止态"显示（同布帘卡）
+                .opacity(this.viewModel.screenPos < 0.1 ? 1 - this.viewModel.screenPos * 10 : 0)
 
                 // 关闭态：两块窗纱板——打开时各自向两侧平移滑出，关闭时从两侧滑回中间合拢
                 Row() {
@@ -399,7 +408,6 @@ export struct CurtainView {
                 .width('100%')
                 .height('100%')
                 .margin({ top: 8 })
-                .opacity(this.viewModel.screenPos)
               }
               .width('56%')
               .height(CommonConstants.CURTAIN_VISUAL_HEIGHT)
