@@ -41,4 +41,15 @@ export class CommonConstants {
   static readonly INPUT_HEIGHT: number = 56                      // 输入框高度
   static readonly INPUT_RADIUS: number = 28                      // 输入框圆角
   static readonly LOGIN_BTN_HEIGHT: number = 56                  // 登录按钮高度
+
+  // —— 首页 / 主壳（第 3 步）——
+  static readonly COLOR_TEXT_ON_GOLD: string = '#5F420F'         // 金色卡片上的深色文字
+  static readonly COLOR_TEXT_ON_GOLD_SUB: string = '#7A5A22'     // 金色卡片上的次要文字
+  static readonly COLOR_GOLD_LIGHT_TEXT: string = '#F2DCAE'      // 金色卡片上的浅金数值
+  static readonly COLOR_TEXT_ON_IMG_SOFT: string = '#E6E0D4'     // 图片背景上的柔和文字
+  static readonly COLOR_TAB_BAR_BG: string = '#D92B2622'         // 底部悬浮栏底色
+  static readonly COLOR_TAB_INACTIVE: string = '#B3FFFFFF'       // TabBar 未选中图标/文字
+  static readonly COLOR_TAB_SELECTED_BG: string = '#C9A46D'      // TabBar 选中胶囊金色
+  static readonly TAB_BAR_HEIGHT: number = 60                    // 底部悬浮栏高度
+  static readonly PAGE_SIDE_PADDING: number = 16                 // 页面左右边距
 }
